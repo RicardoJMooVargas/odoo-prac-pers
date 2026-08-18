@@ -18,6 +18,7 @@ services:
       PORT: ${DB_PORT:-5432}
       USER: ${DB_USER}
       PASSWORD: ${DB_PASSWORD}
+      FORCE_REDEPLOY: "1"
 
     # develop: --dev=all activa recarga automática y debug
     # production: vacío para máximo rendimiento
