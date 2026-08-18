@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_print3d_config,print3d.config,model_print3d_config,base.group_user,1,1,1,1
+access_print3d_printer,print3d.printer,model_print3d_printer,base.group_user,1,1,1,1
+access_print3d_quote_category,print3d.quote.category,model_print3d_quote_category,base.group_user,1,1,1,1
+access_print3d_quote,print3d.quote,model_print3d_quote,base.group_user,1,1,1,1
+access_print3d_quote_material_line,print3d.quote.material.line,model_print3d_quote_material_line,base.group_user,1,1,1,1
+access_print3d_quote_printer_line,print3d.quote.printer.line,model_print3d_quote_printer_line,base.group_user,1,1,1,1
+access_print3d_quote_supply_line,print3d.quote.supply.line,model_print3d_quote_supply_line,base.group_user,1,1,1,1

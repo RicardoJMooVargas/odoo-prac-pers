@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Categoría de Producto: Filamentos 3D -->
+        <record id="product_category_filamentos_3d" model="product.category">
+            <field name="name">Filamentos 3D</field>
+            <!-- property_cost_method y property_valuation pueden requerir dependencias de account/stock que asumimos activas pero lo dejamos genérico -->
+        </record>
+
+        <!-- Atributos: Tipo de Material -->
+        <record id="product_attribute_tipo_material" model="product.attribute">
+            <field name="name">Tipo de Material</field>
+            <field name="create_variant">always</field>
+        </record>
+        <!-- Valores para Tipo -->
+        <record id="attr_val_pla" model="product.attribute.value">
+            <field name="name">PLA</field>
+            <field name="attribute_id" ref="product_attribute_tipo_material"/>
+        </record>
+        <record id="attr_val_petg" model="product.attribute.value">
+            <field name="name">PETG</field>
+            <field name="attribute_id" ref="product_attribute_tipo_material"/>
+        </record>
+        <record id="attr_val_abs" model="product.attribute.value">
+            <field name="name">ABS</field>
+            <field name="attribute_id" ref="product_attribute_tipo_material"/>
+        </record>
+        <record id="attr_val_tpu" model="product.attribute.value">
+            <field name="name">TPU</field>
+            <field name="attribute_id" ref="product_attribute_tipo_material"/>
+        </record>
+
+        <!-- Atributos: Acabado -->
+        <record id="product_attribute_acabado" model="product.attribute">
+            <field name="name">Acabado</field>
+            <field name="create_variant">always</field>
+        </record>
+        <record id="attr_val_mate" model="product.attribute.value">
+            <field name="name">Mate</field>
+            <field name="attribute_id" ref="product_attribute_acabado"/>
+        </record>
+        <record id="attr_val_silk" model="product.attribute.value">
+            <field name="name">Silk</field>
+            <field name="attribute_id" ref="product_attribute_acabado"/>
+        </record>
+        <record id="attr_val_transparente" model="product.attribute.value">
+            <field name="name">Transparente</field>
+            <field name="attribute_id" ref="product_attribute_acabado"/>
+        </record>
+
+        <!-- Atributos: Color -->
+        <record id="product_attribute_color" model="product.attribute">
+            <field name="name">Color</field>
+            <field name="create_variant">always</field>
+            <field name="display_type">color</field>
+        </record>
+        <record id="attr_val_blanco" model="product.attribute.value">
+            <field name="name">Blanco</field>
+            <field name="html_color">#FFFFFF</field>
+            <field name="attribute_id" ref="product_attribute_color"/>
+        </record>
+        <record id="attr_val_negro" model="product.attribute.value">
+            <field name="name">Negro</field>
+            <field name="html_color">#000000</field>
+            <field name="attribute_id" ref="product_attribute_color"/>
+        </record>
+        <record id="attr_val_rojo" model="product.attribute.value">
+            <field name="name">Rojo</field>
+            <field name="html_color">#FF0000</field>
+            <field name="attribute_id" ref="product_attribute_color"/>
+        </record>
+        <record id="attr_val_plata" model="product.attribute.value">
+            <field name="name">Plata</field>
+            <field name="html_color">#C0C0C0</field>
+            <field name="attribute_id" ref="product_attribute_color"/>
+        </record>
+    </data>
+</odoo>

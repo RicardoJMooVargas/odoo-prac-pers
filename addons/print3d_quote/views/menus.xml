@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menú Principal -->
+    <menuitem id="menu_print3d_root" 
+              name="Impresión 3D" 
+              sequence="50" 
+              web_icon="print3d_quote,static/description/icon.png"/>
+
+    <!-- Submenús -->
+    <menuitem id="menu_print3d_quotes" 
+              name="Cotizaciones" 
+              parent="menu_print3d_root" 
+              action="action_print3d_quote" 
+              sequence="10"/>
+
+    <menuitem id="menu_print3d_configuration" 
+              name="Configuración" 
+              parent="menu_print3d_root" 
+              sequence="100"/>
+
+    <menuitem id="menu_print3d_config_settings" 
+              name="Ajustes" 
+              parent="menu_print3d_configuration" 
+              action="action_print3d_config" 
+              sequence="10"/>
+
+    <menuitem id="menu_print3d_printers" 
+              name="Impresoras" 
+              parent="menu_print3d_configuration" 
+              action="action_print3d_printer" 
+              sequence="20"/>
+
+    <menuitem id="menu_print3d_categories" 
+              name="Categorías" 
+              parent="menu_print3d_configuration" 
+              action="action_print3d_quote_category" 
+              sequence="30"/>
+</odoo>
