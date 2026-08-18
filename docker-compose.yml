@@ -1,0 +1,60 @@
+services:
+
+  odoo:
+    image: odoo:17.0
+    container_name: odoo_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+    ports:
+      - "${ODOO_PORT:-8069}:8069"
+
+    volumes:
+      - odoo-data:/var/lib/odoo
+      - ./config:/etc/odoo:ro
+      - ./addons:/mnt/extra-addons
+
+    environment:
+      HOST: ${DB_HOST:-db}          # 'db' si usas el contenedor local, IP si es externa
+      PORT: ${DB_PORT:-5432}
+      USER: ${DB_USER}
+      PASSWORD: ${DB_PASSWORD}
+
+    # develop: --dev=all activa recarga automática y debug
+    # production: se omite el flag para máximo rendimiento
+    command: ${ODOO_EXTRA_ARGS:---dev=all}
+
+    networks:
+      - odoo-net
+
+  db:
+    image: postgres:17-alpine
+    container_name: odoo_db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - odoo-net
+
+volumes:
+  odoo-data:
+  postgres-data:
+
+networks:
+  odoo-net:
+    driver: bridge

@@ -1,0 +1,23 @@
+﻿# Secretos locales - NUNCA subir al repo
+.env
+
+# Datos persistentes de Docker (si alguien bindea localmente)
+postgres-data/
+odoo-data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
