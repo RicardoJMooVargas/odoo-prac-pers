@@ -1,7 +1,8 @@
 services:
 
   odoo:
-    image: odoo:17.0
+    build: .
+    image: odoo_custom:17.0
     container_name: odoo_app
     restart: unless-stopped
 
@@ -10,8 +11,6 @@ services:
 
     volumes:
       - odoo-data:/var/lib/odoo
-      - ./config:/etc/odoo:ro
-      - ./addons:/mnt/extra-addons
 
     environment:
       HOST: ${DB_HOST}
