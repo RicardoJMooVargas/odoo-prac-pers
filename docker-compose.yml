@@ -8,6 +8,7 @@ services:
       db:
         condition: service_healthy
 
+    # Dokploy/Traefik enruta via proxy — el puerto solo se necesita en dev local
     ports:
       - "${ODOO_PORT:-8069}:8069"
 
@@ -17,17 +18,18 @@ services:
       - ./addons:/mnt/extra-addons
 
     environment:
-      HOST: ${DB_HOST:-db}          # 'db' si usas el contenedor local, IP si es externa
+      HOST: ${DB_HOST:-db}
       PORT: ${DB_PORT:-5432}
       USER: ${DB_USER}
       PASSWORD: ${DB_PASSWORD}
 
     # develop: --dev=all activa recarga automática y debug
-    # production: se omite el flag para máximo rendimiento
+    # production: vacío para máximo rendimiento
     command: ${ODOO_EXTRA_ARGS:---dev=all}
 
     networks:
       - odoo-net
+      - dokploy-network   # red de Traefik en Dokploy (externa, ignorada en local)
 
   db:
     image: postgres:17-alpine
@@ -58,3 +60,9 @@ volumes:
 networks:
   odoo-net:
     driver: bridge
+
+  # Red externa creada por Dokploy para Traefik
+  # En local puedes ignorarla — Docker la crea vacía si no existe
+  dokploy-network:
+    external: true
+
