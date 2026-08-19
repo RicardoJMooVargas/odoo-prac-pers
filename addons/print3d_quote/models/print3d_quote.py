@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError, UserError
+
 
 class Print3dQuote(models.Model):
     _name = 'print3d.quote'
@@ -17,7 +19,8 @@ class Print3dQuote(models.Model):
     category_id = fields.Many2one('print3d.quote.category', string='Categoría')
     date = fields.Date(string='Fecha', default=fields.Date.context_today)
     description = fields.Text(string='Descripción del Trabajo / Pieza', required=True)
-    image = fields.Image(string='Foto / Render', max_width=1024, max_height=1024)
+    image = fields.Image(string='Foto / Render (Principal)', max_width=1920, max_height=1920)
+    image_ids = fields.One2many('print3d.quote.image', 'quote_id', string='Imágenes Adicionales')
     notes = fields.Text(string='Notas Internas')
     
     currency_id = fields.Many2one('res.currency', string='Moneda', default=lambda self: self.env.company.currency_id.id, required=True)
@@ -52,6 +55,14 @@ class Print3dQuote(models.Model):
     stock_alert = fields.Boolean(string='Alerta de Stock', compute='_compute_stock_alert')
     purchase_order_ids = fields.Many2many('purchase.order', string='Órdenes de Compra')
     purchase_count = fields.Integer(compute='_compute_purchase_count')
+    
+    sale_order_ids = fields.Many2many('sale.order', string='Órdenes de Venta')
+    sale_order_count = fields.Integer(compute='_compute_sale_order_count')
+    
+    picking_ids = fields.Many2many('stock.picking', string='Movimientos de Inventario')
+    picking_count = fields.Integer(compute='_compute_picking_count')
+
+
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -100,6 +111,19 @@ class Print3dQuote(models.Model):
     def _compute_purchase_count(self):
         for quote in self:
             quote.purchase_count = len(quote.purchase_order_ids)
+
+    @api.depends('sale_order_ids')
+    def _compute_sale_order_count(self):
+        for quote in self:
+            quote.sale_order_count = len(quote.sale_order_ids)
+
+    @api.depends('picking_ids')
+    def _compute_picking_count(self):
+        for quote in self:
+            quote.picking_count = len(quote.picking_ids)
+
+
+
 
     def action_confirm(self):
         for quote in self:
@@ -189,6 +213,83 @@ class Print3dQuote(models.Model):
             'view_mode': 'tree,form',
         }
 
+    def action_view_sales(self):
+        self.ensure_one()
+        return {
+            'name': 'Órdenes de Venta',
+            'type': 'ir.actions.act_window',
+            'res_model': 'sale.order',
+            'domain': [('id', 'in', self.sale_order_ids.ids)],
+            'view_mode': 'tree,form',
+        }
+
+    def action_view_pickings(self):
+        self.ensure_one()
+        return {
+            'name': 'Consumos de Inventario',
+            'type': 'ir.actions.act_window',
+            'res_model': 'stock.picking',
+            'domain': [('id', 'in', self.picking_ids.ids)],
+            'view_mode': 'tree,form',
+        }
+
+    def action_create_picking(self):
+        self.ensure_one()
+        if not self.material_line_ids:
+            return
+
+        # Buscar tipo de operación de salida (Delivery Order / Consumo)
+        picking_type = self.env['stock.picking.type'].search([
+            ('code', '=', 'outgoing'),
+            ('company_id', '=', self.env.company.id)
+        ], limit=1)
+        
+        if not picking_type:
+            raise UserError(_('No se encontró un tipo de operación de salida (Delivery) configurado para la compañía.'))
+
+        # Crear Picking (Albarán)
+        # Buscar la ubicación de producción o clientes
+        location_dest_id = self.env.ref('stock.stock_location_customers', raise_if_not_found=False)
+        if not location_dest_id:
+            location_dest_id = picking_type.default_location_dest_id
+            
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': picking_type.id,
+            'location_id': picking_type.default_location_src_id.id,
+            'location_dest_id': location_dest_id.id,
+            'origin': self.name,
+            'note': _('Consumo de materiales para la cotización %s', self.name),
+        })
+
+        uom_gram = self.env.ref('uom.product_uom_gram')
+
+        # Añadir líneas de materiales
+        for line in self.material_line_ids:
+            if not line.filament_id:
+                continue
+            
+            # Crear stock move en la UoM de Gramos, Odoo se encarga de convertir si el producto está en Kg
+            self.env['stock.move'].create({
+                'name': line.filament_id.name,
+                'product_id': line.filament_id.id,
+                'product_uom_qty': line.weight_grams,
+                'product_uom': uom_gram.id,
+                'picking_id': picking.id,
+                'location_id': picking.location_id.id,
+                'location_dest_id': picking.location_dest_id.id,
+            })
+
+        # Confirmar el picking
+        picking.action_confirm()
+        # Automáticamente asignar y validar el picking si es necesario, pero es mejor dejarlo en listo
+        # picking.action_assign()
+        # picking.button_validate() # Para validarlo automáticamente, requiere asignar lotes si aplica. 
+        # Dejaremos que el usuario lo valide o se quede como pendiente según su flujo.
+
+        self.write({'picking_ids': [(4, picking.id)]})
+        return picking
+
+
 
 class Print3dQuoteMaterialLine(models.Model):
     _name = 'print3d.quote.material.line'
@@ -200,6 +301,8 @@ class Print3dQuoteMaterialLine(models.Model):
     attr_material_type = fields.Many2one('product.attribute.value', string='Tipo', domain="[('attribute_id.name', '=', 'Tipo de Material')]")
     attr_finish = fields.Many2one('product.attribute.value', string='Acabado', domain="[('attribute_id.name', '=', 'Acabado')]")
     attr_color = fields.Many2one('product.attribute.value', string='Color', domain="[('attribute_id.name', '=', 'Color')]")
+    html_color = fields.Char(string='Muestra', related='attr_color.html_color', readonly=True)
+
     
     filament_id = fields.Many2one('product.product', string='Filamento', compute='_compute_filament', store=True, readonly=False)
     
@@ -207,7 +310,7 @@ class Print3dQuoteMaterialLine(models.Model):
     price_per_kg = fields.Float(string='Precio / kg', compute='_compute_price', store=True, readonly=False)
     cost = fields.Float(string='Costo', compute='_compute_cost', store=True)
     
-    stock_qty = fields.Float(string='Stock Disponible (kg)', compute='_compute_stock')
+    stock_qty = fields.Float(string='Stock (g)', compute='_compute_stock')
     stock_status = fields.Selection([
         ('ok', 'Suficiente'),
         ('low', 'Bajo'),
@@ -247,22 +350,24 @@ class Print3dQuoteMaterialLine(models.Model):
 
     @api.depends('filament_id', 'weight_grams')
     def _compute_stock(self):
+        uom_gram = self.env.ref('uom.product_uom_gram', raise_if_not_found=False)
         for line in self:
-            if line.filament_id:
-                # qty_available está en la UoM del producto (asumimos kg)
-                available = line.filament_id.qty_available
-                needed = line.weight_grams / 1000.0
+            if line.filament_id and uom_gram:
+                # Convertir stock disponible a gramos
+                available_grams = line.filament_id.uom_id._compute_quantity(line.filament_id.qty_available, uom_gram)
+                needed_grams = line.weight_grams
                 
-                line.stock_qty = available
-                if available >= needed:
+                line.stock_qty = available_grams
+                if available_grams >= needed_grams:
                     line.stock_status = 'ok'
-                elif available > 0:
+                elif available_grams > 0:
                     line.stock_status = 'low'
                 else:
                     line.stock_status = 'empty'
             else:
                 line.stock_qty = 0.0
                 line.stock_status = 'empty'
+
 
 
 class Print3dQuotePrinterLine(models.Model):
@@ -318,3 +423,12 @@ class Print3dQuoteSupplyLine(models.Model):
     def _compute_subtotal(self):
         for line in self:
             line.subtotal = line.quantity * line.price_unit
+
+class Print3dQuoteImage(models.Model):
+    _name = 'print3d.quote.image'
+    _description = 'Imagen de Cotización 3D'
+
+    quote_id = fields.Many2one('print3d.quote', string='Cotización', required=True, ondelete='cascade')
+    name = fields.Char(string='Nombre')
+    image = fields.Image(string='Imagen', required=True, max_width=1920, max_height=1920)
+

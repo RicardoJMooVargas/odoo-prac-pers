@@ -8,7 +8,9 @@
             <form string="Cotización 3D">
                 <header>
                     <button name="action_confirm" string="Confirmar" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="%(action_print3d_quote_make_sale)d" string="Crear Venta" type="action" class="oe_highlight" invisible="state != 'confirmed' or sale_order_count &gt; 0"/>
                     <button name="action_generate_po" string="Generar Orden de Compra" type="object" invisible="not stock_alert"/>
+
                     <button name="action_draft" string="Volver a Borrador" type="object" invisible="state == 'draft'"/>
                     <button name="action_cancel" string="Cancelar" type="object" invisible="state == 'cancelled'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,cancelled"/>
@@ -18,12 +20,19 @@
                 </div>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
+                        <button name="action_view_pickings" type="object" class="oe_stat_button" icon="fa-cubes" invisible="picking_count == 0">
+                            <field name="picking_count" widget="statinfo" string="Consumos"/>
+                        </button>
+                        <button name="action_view_sales" type="object" class="oe_stat_button" icon="fa-usd" invisible="sale_order_count == 0">
+                            <field name="sale_order_count" widget="statinfo" string="Ventas"/>
+                        </button>
                         <button name="action_view_purchases" type="object" class="oe_stat_button" icon="fa-credit-card" invisible="purchase_count == 0">
                             <field name="purchase_count" widget="statinfo" string="Compras"/>
                         </button>
                     </div>
-                    <field name="image" widget="image" class="oe_avatar" options="{'size': [128, 128]}"/>
+                    <field name="image" widget="image"/>
                     <div class="oe_title">
+
                         <h1>
                             <field name="name"/>
                         </h1>
@@ -37,9 +46,11 @@
                         <group>
                             <field name="stock_alert" invisible="1"/>
                             <field name="currency_id" invisible="1"/>
+                            <field name="sale_order_count" invisible="1"/>
+
                             <field name="electricity_cost_kwh" readonly="state != 'draft'"/>
-                            <field name="labor_cost_per_hour" readonly="state != 'draft'"/>
                         </group>
+
                     </group>
                     <notebook>
                         <page string="Materiales" name="materials">
@@ -48,14 +59,15 @@
                                     <field name="attr_material_type" options="{'no_create': True}"/>
                                     <field name="attr_finish" options="{'no_create': True}"/>
                                     <field name="attr_color" options="{'no_create': True}"/>
+                                    <field name="html_color" widget="color" nolabel="1"/>
                                     <field name="filament_id" required="1"/>
                                     <field name="weight_grams"/>
-                                    <field name="stock_qty" string="Stock (kg)"/>
-                                    <field name="stock_status" widget="badge" 
-                                           decoration-success="stock_status == 'ok'" 
-                                           decoration-warning="stock_status == 'low'" 
-                                           decoration-danger="stock_status == 'empty'"/>
+                                    <field name="stock_qty" string="Stock (g)"
+                                           decoration-success="stock_qty &gt;= weight_grams" 
+                                           decoration-warning="stock_qty &lt; weight_grams and stock_qty &gt; 0" 
+                                           decoration-danger="stock_qty &lt;= 0"/>
                                     <field name="price_per_kg"/>
+
                                     <field name="cost" sum="Total Materiales"/>
                                 </tree>
                             </field>
@@ -64,8 +76,9 @@
                             <field name="printer_line_ids" readonly="state != 'draft'">
                                 <tree editable="bottom">
                                     <field name="printer_id"/>
-                                    <field name="print_hours"/>
+                                    <field name="print_hours" widget="float_time"/>
                                     <field name="power_kw"/>
+
                                     <field name="depreciation_per_hour"/>
                                     <field name="energy_cost" sum="Total Energía"/>
                                     <field name="wear_cost" sum="Total Desgaste"/>
@@ -76,10 +89,12 @@
                         <page string="Mano de Obra e Insumos" name="labor_supplies">
                             <group>
                                 <group string="Mano de Obra">
-                                    <field name="labor_hours" readonly="state != 'draft'"/>
+                                    <field name="labor_hours" widget="float_time" readonly="state != 'draft'"/>
+                                    <field name="labor_cost_per_hour" readonly="state != 'draft'"/>
                                     <field name="cost_labor" readonly="1"/>
                                 </group>
                             </group>
+
                             <separator string="Insumos Adicionales"/>
                             <field name="supply_line_ids" readonly="state != 'draft'">
                                 <tree editable="bottom">
@@ -93,7 +108,37 @@
                         <page string="Notas" name="notes">
                             <field name="notes" placeholder="Consideraciones para la impresión..."/>
                         </page>
+                        <page string="Imágenes Adicionales" name="images">
+                            <field name="image_ids">
+                                <kanban>
+                                    <field name="id"/>
+                                    <field name="name"/>
+                                    <field name="image"/>
+                                    <templates>
+                                        <t t-name="kanban-box">
+                                            <div class="oe_kanban_global_click text-center">
+                                                <div class="o_kanban_image_full_cover">
+                                                    <img t-att-src="kanban_image('print3d.quote.image', 'image', record.id.raw_value)" alt="Imagen" style="max-height: 200px; max-width: 100%;"/>
+                                                </div>
+                                                <div class="oe_kanban_details mt-2">
+                                                    <field name="name"/>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                                <form>
+                                    <sheet>
+                                        <group>
+                                            <field name="name"/>
+                                            <field name="image" widget="image"/>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </page>
                     </notebook>
+
                     <group name="note_group" col="6" class="mt-2 mt-md-0">
                         <group class="oe_subtotal_footer oe_right" colspan="2" name="quote_total">
                             <field name="cost_materials" widget="monetary" options="{'currency_field': 'currency_id'}"/>
@@ -105,10 +150,11 @@
                                 <label for="subtotal_cost"/>
                             </div>
                             <field name="subtotal_cost" nolabel="1" class="oe_subtotal_footer_separator" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                            <field name="margin" widget="percentage" readonly="state != 'draft'"/>
+                            <field name="margin" readonly="state != 'draft'"/>
                             <field name="subtotal_with_margin" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                            <field name="discount" widget="percentage" readonly="state != 'draft'"/>
+                            <field name="discount" readonly="state != 'draft'"/>
                             <field name="discount_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+
                             <div class="oe_subtotal_footer_separator oe_inline o_td_label">
                                 <label for="total"/>
                             </div>

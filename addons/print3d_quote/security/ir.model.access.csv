@@ -6,3 +6,5 @@ access_print3d_quote,print3d.quote,model_print3d_quote,base.group_user,1,1,1,1
 access_print3d_quote_material_line,print3d.quote.material.line,model_print3d_quote_material_line,base.group_user,1,1,1,1
 access_print3d_quote_printer_line,print3d.quote.printer.line,model_print3d_quote_printer_line,base.group_user,1,1,1,1
 access_print3d_quote_supply_line,print3d.quote.supply.line,model_print3d_quote_supply_line,base.group_user,1,1,1,1
+access_print3d_quote_make_sale,print3d.quote.make.sale,model_print3d_quote_make_sale,base.group_user,1,1,1,1
+access_print3d_quote_image,print3d.quote.image,model_print3d_quote_image,base.group_user,1,1,1,1

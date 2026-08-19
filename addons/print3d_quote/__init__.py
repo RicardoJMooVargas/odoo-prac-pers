@@ -6,3 +6,4 @@ mimetypes.add_type('application/font-woff', '.woff')
 mimetypes.add_type('application/font-woff2', '.woff2')
 
 from . import models
+from . import wizard

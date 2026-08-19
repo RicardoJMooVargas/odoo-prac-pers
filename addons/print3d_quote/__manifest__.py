@@ -18,6 +18,7 @@
         'stock',
         'purchase',
         'mail',
+        'sale_management',
     ],
     'data': [
         'security/ir.model.access.csv',
@@ -28,6 +29,7 @@
         'views/print3d_printer_views.xml',
         'views/print3d_quote_category_views.xml',
         'views/print3d_quote_views.xml',
+        'wizard/print3d_quote_make_sale_views.xml',
         'views/menus.xml',
     ],
     'installable': True,
