@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 {
     'name': 'Mi Empresa',
     'version': '17.0.1.0.0',
